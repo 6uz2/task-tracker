@@ -52,7 +52,7 @@ func CreateTask(desc string) (taskId int, err error) {
 
 	writeTasksFile(taskData)
 
-	fmt.Printf("Task added successfully (ID: %d)\n", taskId)
+	fmt.Printf("Task added successfully (ID: %d)\n", newTask.Id)
 
 	return newTask.Id, nil
 }
@@ -73,6 +73,32 @@ func UpdateTaskDescription(taskId int, newDescription string) error {
 		return nil
 	} else {
 		taskData.Tasks[taskIdx].Description = newDescription
+		taskData.Tasks[taskIdx].UpdatedAt = time.Now().UTC()
+	}
+
+	writeTasksFile(taskData)
+
+	fmt.Printf("Task description is updated (ID: %d)\n", taskId)
+
+	return nil
+}
+
+func UpdateTaskStatus(taskId int, status string) error {
+	taskData := readTasksFile()
+
+	if taskData == nil {
+		return errors.New("failed to read task file")
+	}
+
+	if len(taskData.Tasks) == 0 {
+		fmt.Println("Currently no tasks.")
+		return nil
+	}
+
+	if taskIdx := getTaskIndex(taskData.Tasks, taskId); taskIdx < 0 {
+		return nil
+	} else {
+		taskData.Tasks[taskIdx].Status = status
 		taskData.Tasks[taskIdx].UpdatedAt = time.Now().UTC()
 	}
 

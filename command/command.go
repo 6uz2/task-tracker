@@ -117,6 +117,62 @@ func listTasks() *cobra.Command {
 	return listTasks
 }
 
+func markTaskInProgress() *cobra.Command {
+	var markTaskInProgress = &cobra.Command{
+		Use:   "mark-in-progress",
+		Short: "Mark task is in progress status.",
+		Long:  "",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmdArgs := flag.Args()
+
+			if len(cmdArgs) != 2 {
+				fmt.Println("Usage: task-cli mark-in-progress [task Id]")
+				return
+			}
+
+			taskId, err := strconv.Atoi(cmdArgs[1])
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+
+			if err := op.UpdateTaskStatus(taskId, "in-progress"); err != nil {
+				return
+			}
+		},
+	}
+
+	return markTaskInProgress
+}
+
+func markTaskDone() *cobra.Command {
+	var markTaskDone = &cobra.Command{
+		Use:   "mark-done",
+		Short: "Mark task is done.",
+		Long:  "",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmdArgs := flag.Args()
+
+			if len(cmdArgs) != 2 {
+				fmt.Println("Usage: task-cli mark-in-progress [task Id]")
+				return
+			}
+
+			taskId, err := strconv.Atoi(cmdArgs[1])
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+
+			if err := op.UpdateTaskStatus(taskId, "done"); err != nil {
+				return
+			}
+		},
+	}
+
+	return markTaskDone
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "task-cli",
 	Short: "task-cli is a tool to track and manage your task.",
@@ -136,5 +192,7 @@ func Execute() error {
 	rootCmd.AddCommand(updateTask())
 	rootCmd.AddCommand(deleteTask())
 	rootCmd.AddCommand(listTasks())
+	rootCmd.AddCommand(markTaskInProgress())
+	rootCmd.AddCommand(markTaskDone())
 	return rootCmd.Execute()
 }
