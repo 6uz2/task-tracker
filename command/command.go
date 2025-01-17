@@ -85,6 +85,22 @@ func removeTaskProperty(slice []TaskProperties, s int) []TaskProperties {
 	return append(slice[:s], slice[s+1:]...)
 }
 
+func getTaskIndex(tasks []TaskProperties, taskId int) int {
+	var foundTaskIdx = -1
+	for idx, task := range tasks {
+		if task.Id == taskId {
+			foundTaskIdx = idx
+			break
+		}
+	}
+
+	if foundTaskIdx < 0 {
+		fmt.Println("No task found.")
+	}
+
+	return foundTaskIdx
+}
+
 func addTask() *cobra.Command {
 	var addTask = &cobra.Command{
 		Use:   "add",
@@ -130,7 +146,38 @@ func updateTask() *cobra.Command {
 		Short: "Update the task info",
 		Long:  "",
 		Run: func(cmd *cobra.Command, args []string) {
+			cmdArgs := flag.Args()
 
+			if len(cmdArgs) != 3 {
+				fmt.Println("Usage: task-cli update [task Id] \"task description\"")
+				return
+			}
+
+			updateTaskId, err := strconv.Atoi(cmdArgs[1])
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+
+			newDescription := cmdArgs[2]
+
+			taskData := readTasksFile()
+
+			if len(taskData.Tasks) == 0 {
+				fmt.Println("Currently no tasks.")
+				return
+			}
+
+			if taskIdx := getTaskIndex(taskData.Tasks, updateTaskId); taskIdx < 0 {
+				return
+			} else {
+				taskData.Tasks[taskIdx].Description = newDescription
+				taskData.Tasks[taskIdx].UpdatedAt = time.Now().UTC()
+			}
+
+			writeTasksFile(taskData)
+
+			fmt.Printf("Task is updated successfully (ID: %d)\n", updateTaskId)
 		},
 	}
 
@@ -160,24 +207,15 @@ func deleteTask() *cobra.Command {
 			taskData := readTasksFile()
 
 			if len(taskData.Tasks) == 0 {
-				fmt.Println("Currently no task to be deleted.")
+				fmt.Println("Currently no tasks.")
 				return
 			}
 
-			var foundTaskIdx = -1
-			for idx, task := range taskData.Tasks {
-				if task.Id == deleteTaskId {
-					foundTaskIdx = idx
-					break
-				}
-			}
-
-			if foundTaskIdx < 0 {
-				fmt.Println("No task found.")
+			if taskIdx := getTaskIndex(taskData.Tasks, deleteTaskId); taskIdx < 0 {
 				return
+			} else {
+				taskData.Tasks = removeTaskProperty(taskData.Tasks, taskIdx)
 			}
-
-			taskData.Tasks = removeTaskProperty(taskData.Tasks, foundTaskIdx)
 
 			writeTasksFile(taskData)
 
