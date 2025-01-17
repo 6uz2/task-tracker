@@ -1,10 +1,12 @@
 package command
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"strconv"
+	"task-tracker/task-tracker/dto"
 	op "task-tracker/task-tracker/operation"
 
 	"github.com/spf13/cobra"
@@ -110,7 +112,35 @@ func listTasks() *cobra.Command {
 		Short: "Listing task by status.",
 		Long:  "",
 		Run: func(cmd *cobra.Command, args []string) {
+			cmdArgs := flag.Args()
 
+			if len(cmdArgs) > 2 {
+				fmt.Println("Usage: task-cli list [\"\"|\"todo\"|\"in-progress\"|\"done\"]")
+				return
+			}
+
+			var err error
+			var taskToPrint []dto.TaskProperties
+
+			// list all tasks
+			if len(cmdArgs) == 1 {
+				// do stuff
+				if taskToPrint, err = op.GetAllTasks(); err != nil {
+					return
+				}
+			} else {
+				taskStatus := cmdArgs[1]
+				if taskToPrint, err = op.GetTasksByStatus(taskStatus); err != nil {
+					return
+				}
+			}
+
+			taskJSON, err := json.MarshalIndent(taskToPrint, "", "  ")
+			if err != nil {
+				fmt.Println("Error marshalling to JSON:", err)
+				return
+			}
+			fmt.Println(string(taskJSON))
 		},
 	}
 

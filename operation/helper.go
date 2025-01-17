@@ -8,6 +8,10 @@ import (
 )
 
 func getTaskIndex(tasks []dto.TaskProperties, taskId int) int {
+	if tasks == nil {
+		return -1
+	}
+
 	var foundTaskIdx = -1
 	for idx, task := range tasks {
 		if task.Id == taskId {
@@ -132,4 +136,42 @@ func DeleteTask(taskId int) error {
 	fmt.Printf("Task is deleted successfully (ID: %d)\n", taskId)
 
 	return nil
+}
+
+func GetTasksByStatus(taskStatus string) ([]dto.TaskProperties, error) {
+	taskData := readTasksFile()
+
+	if taskData == nil {
+		return nil, errors.New("failed to read task file")
+	}
+
+	if len(taskData.Tasks) == 0 {
+		fmt.Println("Currently no tasks.")
+		return nil, nil
+	}
+
+	taskFound := []dto.TaskProperties{}
+
+	for _, task := range taskData.Tasks {
+		if task.Status == taskStatus {
+			taskFound = append(taskFound, task)
+		}
+	}
+
+	return taskFound, nil
+}
+
+func GetAllTasks() ([]dto.TaskProperties, error) {
+	taskData := readTasksFile()
+
+	if taskData == nil {
+		return nil, errors.New("failed to read task file")
+	}
+
+	if len(taskData.Tasks) == 0 {
+		fmt.Println("Currently no tasks.")
+		return nil, nil
+	}
+
+	return taskData.Tasks, nil
 }
