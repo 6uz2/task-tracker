@@ -1,31 +1,14 @@
 package command
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
-	"time"
+	op "task-tracker/task-tracker/operation"
 
 	"github.com/spf13/cobra"
 )
-
-var taskFilePath string = "tasks.json"
-
-type TaskCollection struct {
-	LastTaskId int
-	Tasks      []TaskProperties
-}
-
-type TaskProperties struct {
-	Id          int
-	Description string
-	Status      string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
 
 func init() {
 	flag.Usage = usage
@@ -36,78 +19,12 @@ func usage() {
 	flag.PrintDefaults()
 }
 
-func readTasksFile() *TaskCollection {
-	var existingTasks TaskCollection
-	if _, err := os.Stat(taskFilePath); !os.IsNotExist(err) {
-		fileBytes, err := os.ReadFile(taskFilePath)
-		if err != nil {
-			log.Fatalf("Error when opening %s file: %s", taskFilePath, err)
-		}
-
-		if len(fileBytes) > 0 {
-			err = json.Unmarshal(fileBytes, &existingTasks)
-			if err != nil {
-				fmt.Println("Error unmarshalling data:", err)
-				return nil
-			}
-		} else {
-			fmt.Println("Empty file")
-		}
-
-	} else if os.IsNotExist(err) {
-		file, err := os.Create(taskFilePath)
-		if err != nil {
-			log.Fatalf("Error creating %s file: %s", taskFilePath, err)
-		}
-		defer file.Close()
-	}
-
-	return &existingTasks
-}
-
-func writeTasksFile(tasks *TaskCollection) {
-	marshaled, err := json.Marshal(tasks)
-
-	if err != nil {
-		fmt.Println("Error marshalling taskCollection: ", err)
-		return
-	}
-
-	err = os.WriteFile(taskFilePath, marshaled, 0644)
-	if err != nil {
-		fmt.Println("Error writing to file: ", err)
-		return
-	}
-}
-
-// Remove element at index from the given slice
-func removeTaskProperty(slice []TaskProperties, s int) []TaskProperties {
-	return append(slice[:s], slice[s+1:]...)
-}
-
-func getTaskIndex(tasks []TaskProperties, taskId int) int {
-	var foundTaskIdx = -1
-	for idx, task := range tasks {
-		if task.Id == taskId {
-			foundTaskIdx = idx
-			break
-		}
-	}
-
-	if foundTaskIdx < 0 {
-		fmt.Println("No task found.")
-	}
-
-	return foundTaskIdx
-}
-
 func addTask() *cobra.Command {
 	var addTask = &cobra.Command{
 		Use:   "add",
 		Short: "Add a new task and return the task ID.",
 		Long:  "",
 		Run: func(cmd *cobra.Command, args []string) {
-			currentTime := time.Now().UTC()
 			cmdArgs := flag.Args()
 
 			if len(cmdArgs) != 2 {
@@ -116,23 +33,10 @@ func addTask() *cobra.Command {
 			}
 
 			taskDescription := cmdArgs[1]
-			taskData := readTasksFile()
 
-			newTask := TaskProperties{
-				Id:          taskData.LastTaskId + 1,
-				Description: taskDescription,
-				Status:      "todo",
-				CreatedAt:   currentTime,
-				UpdatedAt:   currentTime,
+			if _, err := op.CreateTask(taskDescription); err != nil {
+				return
 			}
-
-			taskData.Tasks = append(taskData.Tasks, newTask)
-
-			taskData.LastTaskId = newTask.Id
-
-			writeTasksFile(taskData)
-
-			fmt.Printf("Task added successfully (ID: %d)\n", newTask.Id)
 		},
 	}
 
@@ -161,23 +65,9 @@ func updateTask() *cobra.Command {
 
 			newDescription := cmdArgs[2]
 
-			taskData := readTasksFile()
-
-			if len(taskData.Tasks) == 0 {
-				fmt.Println("Currently no tasks.")
+			if err := op.UpdateTaskDescription(updateTaskId, newDescription); err != nil {
 				return
 			}
-
-			if taskIdx := getTaskIndex(taskData.Tasks, updateTaskId); taskIdx < 0 {
-				return
-			} else {
-				taskData.Tasks[taskIdx].Description = newDescription
-				taskData.Tasks[taskIdx].UpdatedAt = time.Now().UTC()
-			}
-
-			writeTasksFile(taskData)
-
-			fmt.Printf("Task is updated successfully (ID: %d)\n", updateTaskId)
 		},
 	}
 
@@ -204,22 +94,9 @@ func deleteTask() *cobra.Command {
 				return
 			}
 
-			taskData := readTasksFile()
-
-			if len(taskData.Tasks) == 0 {
-				fmt.Println("Currently no tasks.")
+			if err := op.DeleteTask(deleteTaskId); err != nil {
 				return
 			}
-
-			if taskIdx := getTaskIndex(taskData.Tasks, deleteTaskId); taskIdx < 0 {
-				return
-			} else {
-				taskData.Tasks = removeTaskProperty(taskData.Tasks, taskIdx)
-			}
-
-			writeTasksFile(taskData)
-
-			fmt.Printf("Task is deleted successfully (ID: %d)\n", deleteTaskId)
 		},
 	}
 
