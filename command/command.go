@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -78,6 +79,11 @@ func writeTasksFile(tasks *TaskCollection) {
 	}
 }
 
+// Remove element at index from the given slice
+func removeTaskProperty(slice []TaskProperties, s int) []TaskProperties {
+	return append(slice[:s], slice[s+1:]...)
+}
+
 func addTask() *cobra.Command {
 	var addTask = &cobra.Command{
 		Use:   "add",
@@ -88,7 +94,7 @@ func addTask() *cobra.Command {
 			cmdArgs := flag.Args()
 
 			if len(cmdArgs) != 2 {
-				fmt.Println("Usage: task-cli add \"blablabla\"")
+				fmt.Println("Usage: task-cli add \"task description\"")
 				return
 			}
 
@@ -135,7 +141,44 @@ func deleteTask() *cobra.Command {
 		Short: "Delete task by the given task ID.",
 		Long:  "",
 		Run: func(cmd *cobra.Command, args []string) {
+			cmdArgs := flag.Args()
 
+			if len(cmdArgs) != 2 {
+				fmt.Println("Usage: task-cli delete [task Id]")
+				return
+			}
+
+			deleteTaskId, err := strconv.Atoi(cmdArgs[1])
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+
+			taskData := readTasksFile()
+
+			if len(taskData.Tasks) == 0 {
+				fmt.Println("Currently no task to be deleted.")
+				return
+			}
+
+			var foundTaskIdx = -1
+			for idx, task := range taskData.Tasks {
+				if task.Id == deleteTaskId {
+					foundTaskIdx = idx
+					break
+				}
+			}
+
+			if foundTaskIdx < 0 {
+				fmt.Println("No task found.")
+				return
+			}
+
+			taskData.Tasks = removeTaskProperty(taskData.Tasks, foundTaskIdx)
+
+			writeTasksFile(taskData)
+
+			fmt.Printf("Task is deleted successfully (ID: %d)\n", deleteTaskId)
 		},
 	}
 
