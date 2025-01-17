@@ -15,7 +15,8 @@ import (
 var taskFilePath string = "tasks.json"
 
 type TaskCollection struct {
-	Tasks []TaskProperties
+	LastTaskId int
+	Tasks      []TaskProperties
 }
 
 type TaskProperties struct {
@@ -102,7 +103,7 @@ func addTask() *cobra.Command {
 			taskData := readTasksFile()
 
 			newTask := TaskProperties{
-				Id:          len(taskData.Tasks) + 1,
+				Id:          taskData.LastTaskId + 1,
 				Description: taskDescription,
 				Status:      "todo",
 				CreatedAt:   currentTime,
@@ -110,6 +111,8 @@ func addTask() *cobra.Command {
 			}
 
 			taskData.Tasks = append(taskData.Tasks, newTask)
+
+			taskData.LastTaskId = newTask.Id
 
 			writeTasksFile(taskData)
 
