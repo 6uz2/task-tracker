@@ -135,4 +135,5 @@ go build -o task-cli main.go
 
 ## Files
 
-Tasks will be stored in JSON file under the same diectory, and the file name is `tasks.json`.
+Tasks will be stored in JSON file under the same diectory, the file name is `tasks.json`.
+
